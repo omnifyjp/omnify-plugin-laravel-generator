@@ -295,7 +295,7 @@ function generateAlterMigrationContent(
     }
   }
 
-  // Option changes (timestamps, softDelete)
+  // Option changes (timestamps, softDelete, idType)
   if (change.optionChanges) {
     if (change.optionChanges.timestamps) {
       const { from, to } = change.optionChanges.timestamps;
@@ -316,6 +316,57 @@ function generateAlterMigrationContent(
       } else if (from && !to) {
         upLines.push(`            $table->dropSoftDeletes();`);
         downLines.push(`            $table->softDeletes();`);
+      }
+    }
+
+    // Handle idType changes (BigInt <-> Uuid <-> Int <-> String)
+    // This is a complex operation requiring primary key column type change
+    if (change.optionChanges.idType) {
+      const { from, to } = change.optionChanges.idType;
+      const fromType = from ?? 'BigInt';
+      const toType = to ?? 'BigInt';
+
+      // Generate appropriate column type change for primary key
+      const getColumnMethod = (type: string): string => {
+        switch (type) {
+          case 'Uuid': return 'uuid';
+          case 'Int': return 'unsignedInteger';
+          case 'String': return 'string';
+          default: return 'unsignedBigInteger'; // BigInt
+        }
+      };
+
+      const toMethod = getColumnMethod(toType);
+      const fromMethod = getColumnMethod(fromType);
+
+      // Use DB::statement for raw SQL to modify primary key column type
+      // This is necessary because Laravel's change() doesn't work well with primary keys
+      upLines.push(`            // Changing primary key type from ${fromType} to ${toType}`);
+      upLines.push(`            // Note: This requires doctrine/dbal package`);
+      if (toType === 'Uuid') {
+        upLines.push(`            $table->dropPrimary('id');`);
+        upLines.push(`            $table->uuid('id')->change();`);
+        upLines.push(`            $table->primary('id');`);
+      } else if (fromType === 'Uuid') {
+        upLines.push(`            $table->dropPrimary('id');`);
+        upLines.push(`            $table->${toMethod}('id')->change();`);
+        upLines.push(`            $table->primary('id');`);
+      } else {
+        // For Int <-> BigInt changes, simpler column type change
+        upLines.push(`            $table->${toMethod}('id')->change();`);
+      }
+
+      downLines.push(`            // Reverting primary key type from ${toType} to ${fromType}`);
+      if (fromType === 'Uuid') {
+        downLines.push(`            $table->dropPrimary('id');`);
+        downLines.push(`            $table->uuid('id')->change();`);
+        downLines.push(`            $table->primary('id');`);
+      } else if (toType === 'Uuid') {
+        downLines.push(`            $table->dropPrimary('id');`);
+        downLines.push(`            $table->${fromMethod}('id')->change();`);
+        downLines.push(`            $table->primary('id');`);
+      } else {
+        downLines.push(`            $table->${fromMethod}('id')->change();`);
       }
     }
   }
@@ -385,7 +436,8 @@ export function generateAlterMigration(
     (change.indexChanges && change.indexChanges.length > 0) ||
     (change.optionChanges &&
       (change.optionChanges.timestamps ||
-        change.optionChanges.softDelete));
+        change.optionChanges.softDelete ||
+        change.optionChanges.idType));
 
   if (!hasChanges) {
     return null;

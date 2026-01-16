@@ -31,7 +31,7 @@ import {
   shouldGenerateAIGuides,
   toColumnName,
   toTableName
-} from "./chunk-J4DIWR6I.js";
+} from "./chunk-SMMOFVZD.js";
 export {
   extractManyToManyRelations,
   extractMorphToManyRelations,

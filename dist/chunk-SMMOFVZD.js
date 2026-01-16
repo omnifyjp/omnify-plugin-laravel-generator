@@ -1409,6 +1409,50 @@ function generateAlterMigrationContent(tableName, change, options = {}) {
         downLines.push(`            $table->softDeletes();`);
       }
     }
+    if (change.optionChanges.idType) {
+      const { from, to } = change.optionChanges.idType;
+      const fromType = from ?? "BigInt";
+      const toType = to ?? "BigInt";
+      const getColumnMethod = (type) => {
+        switch (type) {
+          case "Uuid":
+            return "uuid";
+          case "Int":
+            return "unsignedInteger";
+          case "String":
+            return "string";
+          default:
+            return "unsignedBigInteger";
+        }
+      };
+      const toMethod = getColumnMethod(toType);
+      const fromMethod = getColumnMethod(fromType);
+      upLines.push(`            // Changing primary key type from ${fromType} to ${toType}`);
+      upLines.push(`            // Note: This requires doctrine/dbal package`);
+      if (toType === "Uuid") {
+        upLines.push(`            $table->dropPrimary('id');`);
+        upLines.push(`            $table->uuid('id')->change();`);
+        upLines.push(`            $table->primary('id');`);
+      } else if (fromType === "Uuid") {
+        upLines.push(`            $table->dropPrimary('id');`);
+        upLines.push(`            $table->${toMethod}('id')->change();`);
+        upLines.push(`            $table->primary('id');`);
+      } else {
+        upLines.push(`            $table->${toMethod}('id')->change();`);
+      }
+      downLines.push(`            // Reverting primary key type from ${toType} to ${fromType}`);
+      if (fromType === "Uuid") {
+        downLines.push(`            $table->dropPrimary('id');`);
+        downLines.push(`            $table->uuid('id')->change();`);
+        downLines.push(`            $table->primary('id');`);
+      } else if (toType === "Uuid") {
+        downLines.push(`            $table->dropPrimary('id');`);
+        downLines.push(`            $table->${fromMethod}('id')->change();`);
+        downLines.push(`            $table->primary('id');`);
+      } else {
+        downLines.push(`            $table->${fromMethod}('id')->change();`);
+      }
+    }
   }
   const connection = options.connection ? `
     protected $connection = '${options.connection}';
@@ -1460,7 +1504,7 @@ function generateAlterMigration(change, options = {}) {
   if (change.changeType !== "modified") {
     return null;
   }
-  const hasChanges = change.columnChanges && change.columnChanges.length > 0 || change.indexChanges && change.indexChanges.length > 0 || change.optionChanges && (change.optionChanges.timestamps || change.optionChanges.softDelete);
+  const hasChanges = change.columnChanges && change.columnChanges.length > 0 || change.indexChanges && change.indexChanges.length > 0 || change.optionChanges && (change.optionChanges.timestamps || change.optionChanges.softDelete || change.optionChanges.idType);
   if (!hasChanges) {
     return null;
   }
@@ -5273,4 +5317,4 @@ export {
   shouldGenerateAIGuides,
   laravelPlugin
 };
-//# sourceMappingURL=chunk-J4DIWR6I.js.map
+//# sourceMappingURL=chunk-SMMOFVZD.js.map

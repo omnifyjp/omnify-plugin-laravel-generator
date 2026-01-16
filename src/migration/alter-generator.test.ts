@@ -237,6 +237,92 @@ describe('generateAlterMigration', () => {
       expect(result!.content).toContain('$table->softDeletes();');
       expect(result!.content).toContain('$table->dropSoftDeletes();');
     });
+
+    it('generates migration for changing idType from BigInt to Uuid', () => {
+      const change: SchemaChange = {
+        schemaName: 'User',
+        changeType: 'modified',
+        optionChanges: {
+          idType: { from: 'BigInt', to: 'Uuid' },
+        },
+      };
+
+      const result = generateAlterMigration(change, { timestamp: '2024_01_01_120000' });
+
+      expect(result).not.toBeNull();
+      expect(result!.content).toContain('Changing primary key type from BigInt to Uuid');
+      expect(result!.content).toContain("$table->dropPrimary('id')");
+      expect(result!.content).toContain("$table->uuid('id')->change()");
+      expect(result!.content).toContain("$table->primary('id')");
+    });
+
+    it('generates migration for changing idType from Uuid to BigInt', () => {
+      const change: SchemaChange = {
+        schemaName: 'Document',
+        changeType: 'modified',
+        optionChanges: {
+          idType: { from: 'Uuid', to: 'BigInt' },
+        },
+      };
+
+      const result = generateAlterMigration(change, { timestamp: '2024_01_01_120000' });
+
+      expect(result).not.toBeNull();
+      expect(result!.content).toContain('Changing primary key type from Uuid to BigInt');
+      expect(result!.content).toContain("$table->dropPrimary('id')");
+      expect(result!.content).toContain("$table->unsignedBigInteger('id')->change()");
+    });
+
+    it('generates migration for changing idType from BigInt to Int', () => {
+      const change: SchemaChange = {
+        schemaName: 'SmallTable',
+        changeType: 'modified',
+        optionChanges: {
+          idType: { from: 'BigInt', to: 'Int' },
+        },
+      };
+
+      const result = generateAlterMigration(change, { timestamp: '2024_01_01_120000' });
+
+      expect(result).not.toBeNull();
+      expect(result!.content).toContain('Changing primary key type from BigInt to Int');
+      expect(result!.content).toContain("$table->unsignedInteger('id')->change()");
+    });
+
+    it('generates migration for changing idType from default (undefined) to Uuid', () => {
+      const change: SchemaChange = {
+        schemaName: 'User',
+        changeType: 'modified',
+        optionChanges: {
+          idType: { from: undefined, to: 'Uuid' },
+        },
+      };
+
+      const result = generateAlterMigration(change, { timestamp: '2024_01_01_120000' });
+
+      expect(result).not.toBeNull();
+      // Default is BigInt when undefined
+      expect(result!.content).toContain('Changing primary key type from BigInt to Uuid');
+    });
+
+    it('includes idType in hasChanges check', () => {
+      // Only idType change, no column/index changes
+      const change: SchemaChange = {
+        schemaName: 'Config',
+        changeType: 'modified',
+        previousHash: 'oldhash',
+        currentHash: 'newhash',
+        optionChanges: {
+          idType: { from: 'BigInt', to: 'String' },
+        },
+      };
+
+      const result = generateAlterMigration(change, { timestamp: '2024_01_01_120000' });
+
+      // Should NOT return null - idType change should be considered a real change
+      expect(result).not.toBeNull();
+      expect(result!.content).toContain('Changing primary key type from BigInt to String');
+    });
   });
 
   describe('column renames', () => {
