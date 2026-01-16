@@ -10,20 +10,20 @@
 [34mCLI[39m Cleaning output folder
 [34mESM[39m Build start
 [34mCJS[39m Build start
-[32mESM[39m [1mdist/index.js              [22m[32m1.61 KB[39m
 [32mESM[39m [1mdist/plugin.js             [22m[32m145.00 B[39m
-[32mESM[39m [1mdist/chunk-CB3WDQMR.js     [22m[32m170.34 KB[39m
+[32mESM[39m [1mdist/index.js              [22m[32m1.61 KB[39m
+[32mESM[39m [1mdist/chunk-J4DIWR6I.js     [22m[32m170.44 KB[39m
 [32mESM[39m [1mdist/plugin.js.map         [22m[32m71.00 B[39m
 [32mESM[39m [1mdist/index.js.map          [22m[32m71.00 B[39m
-[32mESM[39m [1mdist/chunk-CB3WDQMR.js.map [22m[32m343.39 KB[39m
-[32mESM[39m ⚡️ Build success in 105ms
-[32mCJS[39m [1mdist/index.cjs      [22m[32m173.59 KB[39m
-[32mCJS[39m [1mdist/plugin.cjs     [22m[32m166.19 KB[39m
-[32mCJS[39m [1mdist/index.cjs.map  [22m[32m345.44 KB[39m
-[32mCJS[39m [1mdist/plugin.cjs.map [22m[32m340.45 KB[39m
-[32mCJS[39m ⚡️ Build success in 105ms
+[32mESM[39m [1mdist/chunk-J4DIWR6I.js.map [22m[32m343.63 KB[39m
+[32mESM[39m ⚡️ Build success in 35ms
+[32mCJS[39m [1mdist/index.cjs      [22m[32m173.69 KB[39m
+[32mCJS[39m [1mdist/plugin.cjs     [22m[32m166.28 KB[39m
+[32mCJS[39m [1mdist/index.cjs.map  [22m[32m345.68 KB[39m
+[32mCJS[39m [1mdist/plugin.cjs.map [22m[32m340.70 KB[39m
+[32mCJS[39m ⚡️ Build success in 35ms
 [34mDTS[39m Build start
-[32mDTS[39m ⚡️ Build success in 1249ms
+[32mDTS[39m ⚡️ Build success in 865ms
 [32mDTS[39m [1mdist/index.d.ts   [22m[32m17.52 KB[39m
 [32mDTS[39m [1mdist/plugin.d.ts  [22m[32m4.21 KB[39m
 [32mDTS[39m [1mdist/index.d.cts  [22m[32m17.52 KB[39m

@@ -2649,7 +2649,10 @@ class {{CLASS_NAME}}Locales
   return stubs[stubName] ?? "";
 }
 function generateServiceProvider(schemas, options, stubContent) {
-  const morphMap = Object.values(schemas).filter((s) => s.kind !== "enum" && s.kind !== "partial" && s.options?.hidden !== true).map((s) => {
+  const morphMap = Object.values(schemas).filter(
+    (s) => s.kind !== "enum" && s.kind !== "partial" && s.options?.hidden !== true && !s.packageOutput
+    // Skip schemas from external packages (additionalSchemaPaths)
+  ).map((s) => {
     const className = toPascalCase(s.name);
     return `            '${s.name}' => \\${options.modelNamespace}\\${className}::class,`;
   }).join("\n");
