@@ -1377,9 +1377,15 @@ function generateServiceProvider(
   options: ResolvedOptions,
   stubContent: string
 ): GeneratedModel {
-  // Build morph map - only include models (not enums, partials, or hidden schemas)
+  // Build morph map - only include models (not enums, partials, hidden, or external package schemas)
+  // External packages should handle their own morph maps via their ServiceProviders
   const morphMap = Object.values(schemas)
-    .filter(s => s.kind !== 'enum' && s.kind !== 'partial' && s.options?.hidden !== true)
+    .filter(s =>
+      s.kind !== 'enum' &&
+      s.kind !== 'partial' &&
+      s.options?.hidden !== true &&
+      !s.packageOutput // Skip schemas from external packages (additionalSchemaPaths)
+    )
     .map(s => {
       const className = toPascalCase(s.name);
       return `            '${s.name}' => \\${options.modelNamespace}\\${className}::class,`;
