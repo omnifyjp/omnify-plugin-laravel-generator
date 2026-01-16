@@ -1,0 +1,27 @@
+<?php
+
+namespace {{MODEL_NAMESPACE}};
+
+use {{BASE_MODEL_NAMESPACE}}\{{CLASS_NAME}}BaseModel;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
+/**
+ * {{CLASS_NAME}} Model
+ *
+ * This file is generated once and can be customized.
+ * Add your custom methods and logic here.
+ */
+class {{CLASS_NAME}} extends {{CLASS_NAME}}BaseModel
+{
+    use HasFactory;
+
+    /**
+     * Create a new model instance.
+     */
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+    }
+
+    // Add your custom methods here
+}
