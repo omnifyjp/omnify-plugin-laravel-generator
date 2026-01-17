@@ -10,20 +10,20 @@ CLI Target: es2022
 CLI Cleaning output folder
 ESM Build start
 CJS Build start
-CJS dist/plugin.cjs     170.07 KB
-CJS dist/index.cjs      177.47 KB
-CJS dist/index.cjs.map  352.92 KB
-CJS dist/plugin.cjs.map 347.94 KB
-CJS ⚡️ Build success in 32ms
 ESM dist/index.js              1.61 KB
 ESM dist/plugin.js             145.00 B
-ESM dist/chunk-5LDK7TNO.js     174.22 KB
+ESM dist/chunk-VXI5GXZN.js     174.09 KB
 ESM dist/index.js.map          71.00 B
 ESM dist/plugin.js.map         71.00 B
-ESM dist/chunk-5LDK7TNO.js.map 350.87 KB
-ESM ⚡️ Build success in 32ms
+ESM dist/chunk-VXI5GXZN.js.map 350.78 KB
+ESM ⚡️ Build success in 45ms
+CJS dist/plugin.cjs     169.30 KB
+CJS dist/index.cjs      177.34 KB
+CJS dist/index.cjs.map  352.83 KB
+CJS dist/plugin.cjs.map 347.50 KB
+CJS ⚡️ Build success in 45ms
 DTS Build start
-DTS ⚡️ Build success in 946ms
+DTS ⚡️ Build success in 810ms
 DTS dist/index.d.ts   17.52 KB
 DTS dist/plugin.d.ts  4.21 KB
 DTS dist/index.d.cts  17.52 KB

@@ -4616,21 +4616,6 @@ function generateAIGuides(rootDir, options = {}) {
   result.antigravityRules = antigravityCount;
   return result;
 }
-function shouldGenerateAIGuides(rootDir) {
-  const claudeDir = (0, import_node_path.resolve)(rootDir, ".claude/omnify/guides/laravel");
-  const cursorDir = (0, import_node_path.resolve)(rootDir, ".cursor/rules/omnify");
-  if (!(0, import_node_fs.existsSync)(claudeDir) || !(0, import_node_fs.existsSync)(cursorDir)) {
-    return true;
-  }
-  try {
-    const claudeFiles = (0, import_node_fs.readdirSync)(claudeDir);
-    const cursorFiles = (0, import_node_fs.readdirSync)(cursorDir);
-    const hasLaravelRules = cursorFiles.some((f) => f.startsWith("laravel"));
-    return claudeFiles.length === 0 || !hasLaravelRules;
-  } catch {
-    return true;
-  }
-}
 
 // src/plugin.ts
 function extractPackagePaths(schemas) {
@@ -5132,10 +5117,6 @@ function laravelPlugin(options) {
     name: "laravel-ai-guides",
     description: "Generate AI assistant guides (Claude, Cursor) for Laravel development",
     generate: async (ctx) => {
-      if (!shouldGenerateAIGuides(ctx.cwd)) {
-        ctx.logger.debug("AI guides already exist, skipping");
-        return [];
-      }
       const packagePaths = extractPackagePaths(ctx.schemas);
       const result = generateAIGuides(ctx.cwd, {
         modelsPath: resolved.modelsPath,

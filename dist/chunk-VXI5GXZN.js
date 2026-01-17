@@ -5290,10 +5290,6 @@ function laravelPlugin(options) {
     name: "laravel-ai-guides",
     description: "Generate AI assistant guides (Claude, Cursor) for Laravel development",
     generate: async (ctx) => {
-      if (!shouldGenerateAIGuides(ctx.cwd)) {
-        ctx.logger.debug("AI guides already exist, skipping");
-        return [];
-      }
       const packagePaths = extractPackagePaths(ctx.schemas);
       const result = generateAIGuides(ctx.cwd, {
         modelsPath: resolved.modelsPath,
@@ -5364,4 +5360,4 @@ export {
   shouldGenerateAIGuides,
   laravelPlugin
 };
-//# sourceMappingURL=chunk-5LDK7TNO.js.map
+//# sourceMappingURL=chunk-VXI5GXZN.js.map

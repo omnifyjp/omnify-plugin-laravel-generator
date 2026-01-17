@@ -161,30 +161,30 @@ describe('generateMigrations - Timestamp Consistency', () => {
         expect(timestamps[2]).toBe('2024_01_01_120002');
     });
 
-  it('timestamps should maintain order even with many schemas', () => {
-    // Create 10 schemas in a chain: S1 -> S2 -> S3 -> ... -> S10
-    const schemaBuilder: Record<string, SchemaCollection[string]> = {};
-    for (let i = 1; i <= 10; i++) {
-      schemaBuilder[`Schema${i}`] = {
-        name: `Schema${i}`,
-        kind: 'object',
-        filePath: `/schemas/Schema${i}.yaml`,
-        relativePath: `/schemas/Schema${i}.yaml`,
-        properties:
-          i === 1
-            ? { name: { type: 'String' } }
-            : {
-                parent: {
-                  type: 'Association',
-                  relation: 'ManyToOne',
-                  target: `Schema${i - 1}`,
-                },
-              },
-      };
-    }
-    const schemas = schemaBuilder as SchemaCollection;
+    it('timestamps should maintain order even with many schemas', () => {
+        // Create 10 schemas in a chain: S1 -> S2 -> S3 -> ... -> S10
+        const schemaBuilder: Record<string, SchemaCollection[string]> = {};
+        for (let i = 1; i <= 10; i++) {
+            schemaBuilder[`Schema${i}`] = {
+                name: `Schema${i}`,
+                kind: 'object',
+                filePath: `/schemas/Schema${i}.yaml`,
+                relativePath: `/schemas/Schema${i}.yaml`,
+                properties:
+                    i === 1
+                        ? { name: { type: 'String' } }
+                        : {
+                            parent: {
+                                type: 'Association',
+                                relation: 'ManyToOne',
+                                target: `Schema${i - 1}`,
+                            },
+                        },
+            };
+        }
+        const schemas = schemaBuilder as SchemaCollection;
 
-    const migrations = generateMigrations(schemas);
+        const migrations = generateMigrations(schemas);
 
         expect(migrations).toHaveLength(10);
 
@@ -498,20 +498,20 @@ describe('generateMigrations - Edge Cases', () => {
         expect(migrations).toHaveLength(0);
     });
 
-  it('schema with only enums should not generate table migrations', () => {
-    const schemas: SchemaCollection = {
-      Status: {
-        name: 'Status',
-        kind: 'enum',
-        filePath: '/schemas/Status.yaml',
-        relativePath: '/schemas/Status.yaml',
-        properties: {},
-        values: ['draft', 'published', 'archived'],
-      },
-    };
+    it('schema with only enums should not generate table migrations', () => {
+        const schemas: SchemaCollection = {
+            Status: {
+                name: 'Status',
+                kind: 'enum',
+                filePath: '/schemas/Status.yaml',
+                relativePath: '/schemas/Status.yaml',
+                properties: {},
+                values: ['draft', 'published', 'archived'],
+            },
+        };
 
-    const migrations = generateMigrations(schemas, { timestamp: '2024_01_01_000000' });
+        const migrations = generateMigrations(schemas, { timestamp: '2024_01_01_000000' });
 
-    expect(migrations).toHaveLength(0);
-  });
+        expect(migrations).toHaveLength(0);
+    });
 });

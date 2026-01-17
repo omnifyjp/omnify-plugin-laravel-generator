@@ -38,7 +38,7 @@ import { generateModels, getModelPath, generateProviderRegistration, type ModelG
 import { generateFactories, getFactoryPath, type FactoryGeneratorOptions } from './factory/index.js';
 import { generateRequests, getRequestPath, type RequestGeneratorOptions } from './request/index.js';
 import { generateResources, getResourcePath, type ResourceGeneratorOptions } from './resource/index.js';
-import { generateAIGuides, shouldGenerateAIGuides, type PackagePath } from './ai-guides/index.js';
+import { generateAIGuides, type PackagePath } from './ai-guides/index.js';
 
 /**
  * Extract unique package paths from schemas with packageOutput.laravel config
@@ -864,11 +864,10 @@ export default function laravelPlugin(options?: LaravelPluginOptions): OmnifyPlu
     description: 'Generate AI assistant guides (Claude, Cursor) for Laravel development',
 
     generate: async (ctx: GeneratorContext): Promise<GeneratorOutput[]> => {
-      // Only generate if guides don't exist
-      if (!shouldGenerateAIGuides(ctx.cwd)) {
-        ctx.logger.debug('AI guides already exist, skipping');
-        return [];
-      }
+      // Always regenerate AI guides to ensure:
+      // 1. Deleted files are restored
+      // 2. Updated guides from omnify-core are synced
+      // 3. Idempotent behavior on every `npx omnify generate`
 
       // Extract package paths from schemas for glob expansion
       const packagePaths = extractPackagePaths(ctx.schemas);
