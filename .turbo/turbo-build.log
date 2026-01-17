@@ -1,30 +1,30 @@
 
-> @famgia/omnify-laravel@0.0.167 build /Users/f.satoshi/Herd/omnify-ts/packages/omnify-plugin-laravel-generator
+> @famgia/omnify-laravel@0.0.168 build /Users/f.satoshi/Herd/omnify-ts/packages/omnify-plugin-laravel-generator
 > tsup
 
-CLI Building entry: src/index.ts, src/plugin.ts
-CLI Using tsconfig: tsconfig.json
-CLI tsup v8.5.1
-CLI Using tsup config: /Users/f.satoshi/Herd/omnify-ts/packages/omnify-plugin-laravel-generator/tsup.config.ts
-CLI Target: es2022
-CLI Cleaning output folder
-ESM Build start
-CJS Build start
-ESM dist/index.js              1.61 KB
-ESM dist/plugin.js             145.00 B
-ESM dist/chunk-VXI5GXZN.js     174.09 KB
-ESM dist/index.js.map          71.00 B
-ESM dist/plugin.js.map         71.00 B
-ESM dist/chunk-VXI5GXZN.js.map 350.78 KB
-ESM ⚡️ Build success in 45ms
-CJS dist/plugin.cjs     169.30 KB
-CJS dist/index.cjs      177.34 KB
-CJS dist/index.cjs.map  352.83 KB
-CJS dist/plugin.cjs.map 347.50 KB
-CJS ⚡️ Build success in 45ms
-DTS Build start
-DTS ⚡️ Build success in 810ms
-DTS dist/index.d.ts   17.52 KB
-DTS dist/plugin.d.ts  4.21 KB
-DTS dist/index.d.cts  17.52 KB
-DTS dist/plugin.d.cts 4.21 KB
+[34mCLI[39m Building entry: src/index.ts, src/plugin.ts
+[34mCLI[39m Using tsconfig: tsconfig.json
+[34mCLI[39m tsup v8.5.1
+[34mCLI[39m Using tsup config: /Users/f.satoshi/Herd/omnify-ts/packages/omnify-plugin-laravel-generator/tsup.config.ts
+[34mCLI[39m Target: es2022
+[34mCLI[39m Cleaning output folder
+[34mESM[39m Build start
+[34mCJS[39m Build start
+[32mESM[39m [1mdist/index.js              [22m[32m1.61 KB[39m
+[32mESM[39m [1mdist/chunk-VXI5GXZN.js     [22m[32m174.09 KB[39m
+[32mESM[39m [1mdist/plugin.js             [22m[32m145.00 B[39m
+[32mESM[39m [1mdist/index.js.map          [22m[32m71.00 B[39m
+[32mESM[39m [1mdist/plugin.js.map         [22m[32m71.00 B[39m
+[32mESM[39m [1mdist/chunk-VXI5GXZN.js.map [22m[32m350.78 KB[39m
+[32mESM[39m ⚡️ Build success in 36ms
+[32mCJS[39m [1mdist/index.cjs      [22m[32m177.34 KB[39m
+[32mCJS[39m [1mdist/plugin.cjs     [22m[32m169.30 KB[39m
+[32mCJS[39m [1mdist/plugin.cjs.map [22m[32m347.50 KB[39m
+[32mCJS[39m [1mdist/index.cjs.map  [22m[32m352.83 KB[39m
+[32mCJS[39m ⚡️ Build success in 36ms
+[34mDTS[39m Build start
+[32mDTS[39m ⚡️ Build success in 848ms
+[32mDTS[39m [1mdist/index.d.ts   [22m[32m17.52 KB[39m
+[32mDTS[39m [1mdist/plugin.d.ts  [22m[32m4.21 KB[39m
+[32mDTS[39m [1mdist/index.d.cts  [22m[32m17.52 KB[39m
+[32mDTS[39m [1mdist/plugin.d.cts [22m[32m4.21 KB[39m
