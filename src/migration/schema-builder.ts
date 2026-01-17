@@ -333,29 +333,54 @@ export function generatePolymorphicColumns(
     modifiers: isNullable ? [{ method: 'nullable' }] : [],
   };
 
-  // For polymorphic id, we need to determine the largest ID type among targets
-  // Default to unsignedBigInteger for maximum compatibility
-  let idMethod = 'unsignedBigInteger';
-
-  // Check if any target uses UUID or String - those take precedence
+  // For polymorphic id, we need to determine the appropriate ID type among targets
+  // Collect all ID types from targets to handle mixed scenarios
+  const idTypes = new Set<string>();
   for (const targetName of targets) {
     const targetSchema = allSchemas[targetName];
     if (targetSchema) {
       const targetIdType = (targetSchema.options?.idType ?? 'BigInt') as string;
-      if (targetIdType === 'Uuid') {
-        idMethod = 'uuid';
-        break; // UUID takes highest precedence
-      } else if (targetIdType === 'String') {
-        idMethod = 'string';
-        // Don't break - UUID still takes precedence
-      }
+      idTypes.add(targetIdType);
     }
+  }
+
+  // Determine column method based on ID types:
+  // - If ALL targets use same type → use that type's method
+  // - If MIXED types (e.g., UUID + BigInt) → use string(36) to accommodate both
+  let idMethod = 'unsignedBigInteger';
+  let idArgs: (string | number)[] = [];
+
+  if (idTypes.size === 1) {
+    // All targets use the same ID type
+    const singleType = [...idTypes][0];
+    if (singleType === 'Uuid') {
+      idMethod = 'string'; // UUID stored as 36-char string for compatibility
+      idArgs = [idColumnName, 36];
+    } else if (singleType === 'String') {
+      idMethod = 'string';
+      idArgs = [idColumnName, 255];
+    } else if (singleType === 'Int') {
+      idMethod = 'unsignedInteger';
+      idArgs = [idColumnName];
+    } else {
+      // BigInt (default)
+      idMethod = 'unsignedBigInteger';
+      idArgs = [idColumnName];
+    }
+  } else if (idTypes.size > 1) {
+    // Mixed ID types - use string(36) to accommodate UUIDs (longest type)
+    // BigInt/Int values will be stored as numeric strings
+    idMethod = 'string';
+    idArgs = [idColumnName, 36];
+  } else {
+    // No targets found - default to BigInt
+    idArgs = [idColumnName];
   }
 
   const idColumn: ColumnMethod = {
     name: idColumnName,
     method: idMethod,
-    args: idMethod === 'string' ? [idColumnName, 255] : [idColumnName],
+    args: idArgs.length > 0 ? idArgs : [idColumnName],
     modifiers: isNullable ? [{ method: 'nullable' }] : [],
   };
 

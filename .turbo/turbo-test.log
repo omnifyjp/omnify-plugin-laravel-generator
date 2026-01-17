@@ -1,5 +1,5 @@
 
-> @famgia/omnify-laravel@0.0.166 test /Users/f.satoshi/Herd/omnify-ts/packages/omnify-plugin-laravel-generator
+> @famgia/omnify-laravel@0.0.167 test /Users/f.satoshi/Herd/omnify-ts/packages/omnify-plugin-laravel-generator
 > vitest run --passWithNoTests
 
 

@@ -661,6 +661,58 @@ describe('generateMigrationsFromChanges', () => {
     expect(result).toHaveLength(2);
     expect(result.map(m => m.type)).toEqual(['alter', 'drop']);
   });
+
+  it('uses consistent base timestamp when no timestamp option provided', () => {
+    const changes: SchemaChange[] = [
+      {
+        schemaName: 'User',
+        changeType: 'modified',
+        columnChanges: [
+          { column: 'a', changeType: 'added', currentDef: { type: 'String' } },
+        ],
+      },
+      {
+        schemaName: 'Post',
+        changeType: 'modified',
+        columnChanges: [
+          { column: 'b', changeType: 'added', currentDef: { type: 'String' } },
+        ],
+      },
+      {
+        schemaName: 'Comment',
+        changeType: 'modified',
+        columnChanges: [
+          { column: 'c', changeType: 'added', currentDef: { type: 'String' } },
+        ],
+      },
+    ];
+
+    // Generate WITHOUT passing timestamp - this tests the bug fix
+    const result = generateMigrationsFromChanges(changes);
+
+    expect(result).toHaveLength(3);
+
+    // Extract base timestamps (everything except seconds)
+    const baseTimestamps = result.map(m => {
+      const match = m.fileName.match(/^(\d{4}_\d{2}_\d{2}_\d{4})/);
+      return match ? match[1] : '';
+    });
+
+    // All base timestamps should be identical (same YYYY_MM_DD_HHMM)
+    const uniqueBaseTimes = [...new Set(baseTimestamps)];
+    expect(uniqueBaseTimes).toHaveLength(1);
+
+    // Verify seconds increment correctly
+    const seconds = result.map(m => {
+      const match = m.fileName.match(/^\d{4}_\d{2}_\d{2}_\d{4}(\d{2})/);
+      return match ? parseInt(match[1], 10) : -1;
+    });
+
+    // Each subsequent migration should have seconds incremented by 1
+    for (let i = 1; i < seconds.length; i++) {
+      expect(seconds[i]).toBe((seconds[i - 1]! + 1) % 60);
+    }
+  });
 });
 
 describe('type mappings', () => {

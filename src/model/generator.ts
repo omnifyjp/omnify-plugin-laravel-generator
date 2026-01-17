@@ -456,8 +456,48 @@ function generateEntityBaseModel(
         if (!assoc.mappedBy) {
           const fkName = toSnakeCase(propName) + '_id';
           fillable.push(`        '${fkName}',`);
-          docProperties.push(` * @property int|null $${fkName}`);
+          // Determine FK type based on target schema's idType
+          const targetSchema = assoc.target ? schemas[assoc.target] : undefined;
+          const targetIdType = targetSchema?.options?.idType ?? 'BigInt';
+          const fkPhpType = targetIdType === 'Uuid' || targetIdType === 'String' ? 'string' : 'int';
+          docProperties.push(` * @property ${fkPhpType}|null $${fkName}`);
         }
+      }
+
+      // Add polymorphic columns for MorphTo relations
+      if (assoc.relation === 'MorphTo') {
+        const morphTargets = (assoc as any).targets as string[] | undefined;
+        const baseName = toSnakeCase(propName);
+        const typeCol = `${baseName}_type`;
+        const idCol = `${baseName}_id`;
+
+        fillable.push(`        '${typeCol}',`);
+        fillable.push(`        '${idCol}',`);
+
+        // Determine if any target uses UUID or mixed types
+        let usesUuid = false;
+        let usesMixed = false;
+        const idTypes = new Set<string>();
+
+        if (morphTargets) {
+          for (const target of morphTargets) {
+            const targetSchema = schemas[target];
+            if (targetSchema) {
+              const targetIdType = targetSchema.options?.idType ?? 'BigInt';
+              idTypes.add(targetIdType);
+              if (targetIdType === 'Uuid') usesUuid = true;
+            }
+          }
+          usesMixed = idTypes.size > 1;
+        }
+
+        // Cast _id as string if targets use UUID or mixed types
+        if (usesUuid || usesMixed) {
+          casts.push(`            '${idCol}' => 'string',`);
+        }
+
+        docProperties.push(` * @property string|null $${typeCol}`);
+        docProperties.push(` * @property string|int|null $${idCol}`);
       }
     } else if (propDef.type === 'Password') {
       // Check if fillable: false is set

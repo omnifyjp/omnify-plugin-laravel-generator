@@ -244,23 +244,41 @@ function generatePolymorphicColumns(propertyName, property, allSchemas) {
     args: [typeColumnName, targets],
     modifiers: isNullable2 ? [{ method: "nullable" }] : []
   };
-  let idMethod = "unsignedBigInteger";
+  const idTypes = /* @__PURE__ */ new Set();
   for (const targetName of targets) {
     const targetSchema = allSchemas[targetName];
     if (targetSchema) {
       const targetIdType = targetSchema.options?.idType ?? "BigInt";
-      if (targetIdType === "Uuid") {
-        idMethod = "uuid";
-        break;
-      } else if (targetIdType === "String") {
-        idMethod = "string";
-      }
+      idTypes.add(targetIdType);
     }
+  }
+  let idMethod = "unsignedBigInteger";
+  let idArgs = [];
+  if (idTypes.size === 1) {
+    const singleType = [...idTypes][0];
+    if (singleType === "Uuid") {
+      idMethod = "string";
+      idArgs = [idColumnName, 36];
+    } else if (singleType === "String") {
+      idMethod = "string";
+      idArgs = [idColumnName, 255];
+    } else if (singleType === "Int") {
+      idMethod = "unsignedInteger";
+      idArgs = [idColumnName];
+    } else {
+      idMethod = "unsignedBigInteger";
+      idArgs = [idColumnName];
+    }
+  } else if (idTypes.size > 1) {
+    idMethod = "string";
+    idArgs = [idColumnName, 36];
+  } else {
+    idArgs = [idColumnName];
   }
   const idColumn = {
     name: idColumnName,
     method: idMethod,
-    args: idMethod === "string" ? [idColumnName, 255] : [idColumnName],
+    args: idArgs.length > 0 ? idArgs : [idColumnName],
     modifiers: isNullable2 ? [{ method: "nullable" }] : []
   };
   const indexes = [
@@ -1174,9 +1192,9 @@ function generateMigrations(schemas, options = {}) {
   const pivotTablesGenerated = /* @__PURE__ */ new Set();
   let timestampOffset = 0;
   const sortedSchemas = topologicalSort(schemas);
+  const baseTimestamp = options.timestamp ?? generateTimestamp();
   for (const schema of sortedSchemas) {
-    const timestamp = options.timestamp ?? generateTimestamp();
-    const offsetTimestamp = incrementTimestamp(timestamp, timestampOffset);
+    const offsetTimestamp = incrementTimestamp(baseTimestamp, timestampOffset);
     timestampOffset++;
     const blueprint = schemaToBlueprint(schema, schemas, {
       customTypes: options.customTypes,
@@ -1208,8 +1226,7 @@ function generateMigrations(schemas, options = {}) {
         continue;
       }
       pivotTablesGenerated.add(pivot.tableName);
-      const timestamp = options.timestamp ?? generateTimestamp();
-      const offsetTimestamp = incrementTimestamp(timestamp, timestampOffset);
+      const offsetTimestamp = incrementTimestamp(baseTimestamp, timestampOffset);
       timestampOffset++;
       const blueprint = generatePivotTableBlueprint(pivot);
       const migration = generateCreateMigration(blueprint, {
@@ -1628,11 +1645,11 @@ return new class extends Migration
 function generateMigrationsFromChanges(changes, options = {}) {
   const migrations = [];
   let timestampOffset = 0;
+  const baseTimestamp = options.timestamp ?? generateTimestamp2();
   const getNextTimestamp = () => {
-    const ts = options.timestamp ?? generateTimestamp2();
     const offset = timestampOffset++;
-    if (offset === 0) return ts;
-    const parts = ts.split("_");
+    if (offset === 0) return baseTimestamp;
+    const parts = baseTimestamp.split("_");
     if (parts.length >= 4) {
       const timePart = parts[3] ?? "000000";
       const secs = parseInt(timePart.substring(4, 6), 10) + offset;
@@ -1640,7 +1657,7 @@ function generateMigrationsFromChanges(changes, options = {}) {
       parts[3] = timePart.substring(0, 4) + newSecs;
       return parts.join("_");
     }
-    return ts;
+    return baseTimestamp;
   };
   for (const change of changes) {
     if (change.changeType === "modified") {
@@ -1911,8 +1928,38 @@ function generateEntityBaseModel(schema, schemas, options, stubContent, authStub
         if (!assoc.mappedBy) {
           const fkName = toSnakeCase(propName) + "_id";
           fillable.push(`        '${fkName}',`);
-          docProperties.push(` * @property int|null $${fkName}`);
+          const targetSchema = assoc.target ? schemas[assoc.target] : void 0;
+          const targetIdType = targetSchema?.options?.idType ?? "BigInt";
+          const fkPhpType = targetIdType === "Uuid" || targetIdType === "String" ? "string" : "int";
+          docProperties.push(` * @property ${fkPhpType}|null $${fkName}`);
         }
+      }
+      if (assoc.relation === "MorphTo") {
+        const morphTargets = assoc.targets;
+        const baseName = toSnakeCase(propName);
+        const typeCol = `${baseName}_type`;
+        const idCol = `${baseName}_id`;
+        fillable.push(`        '${typeCol}',`);
+        fillable.push(`        '${idCol}',`);
+        let usesUuid = false;
+        let usesMixed = false;
+        const idTypes = /* @__PURE__ */ new Set();
+        if (morphTargets) {
+          for (const target of morphTargets) {
+            const targetSchema = schemas[target];
+            if (targetSchema) {
+              const targetIdType = targetSchema.options?.idType ?? "BigInt";
+              idTypes.add(targetIdType);
+              if (targetIdType === "Uuid") usesUuid = true;
+            }
+          }
+          usesMixed = idTypes.size > 1;
+        }
+        if (usesUuid || usesMixed) {
+          casts.push(`            '${idCol}' => 'string',`);
+        }
+        docProperties.push(` * @property string|null $${typeCol}`);
+        docProperties.push(` * @property string|int|null $${idCol}`);
       }
     } else if (propDef.type === "Password") {
       const propWithFillable = propDef;

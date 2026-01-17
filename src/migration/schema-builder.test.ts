@@ -525,19 +525,82 @@ describe('Schema Builder', () => {
       expect(result!.indexes[0].columns).toEqual(['commentable_type', 'commentable_id']);
     });
 
-    it('uses UUID for id column if any target uses UUID', () => {
+    it('uses string(36) for id column when targets have mixed ID types (UUID + BigInt)', () => {
       const result = generatePolymorphicColumns(
         'imageable',
         {
           type: 'Association',
           relation: 'MorphTo',
-          targets: ['Post', 'Image'], // Image uses UUID
+          targets: ['Post', 'Image'], // Post uses BigInt, Image uses UUID - mixed types
         } as any,
         allSchemas
       );
 
       expect(result).not.toBeNull();
-      expect(result!.idColumn.method).toBe('uuid');
+      // Mixed ID types should use string(36) to accommodate both
+      expect(result!.idColumn.method).toBe('string');
+      expect(result!.idColumn.args).toEqual(['imageable_id', 36]);
+    });
+
+    it('uses string(36) for id column when all targets use UUID', () => {
+      const uuidOnlySchemas: SchemaCollection = {
+        ...allSchemas,
+        Post: {
+          ...allSchemas['Post'],
+          options: { idType: 'Uuid' },
+        },
+      };
+
+      const result = generatePolymorphicColumns(
+        'imageable',
+        {
+          type: 'Association',
+          relation: 'MorphTo',
+          targets: ['Post', 'Image'], // Both use UUID
+        } as any,
+        uuidOnlySchemas
+      );
+
+      expect(result).not.toBeNull();
+      // All UUID targets use string(36) for consistency
+      expect(result!.idColumn.method).toBe('string');
+      expect(result!.idColumn.args).toEqual(['imageable_id', 36]);
+    });
+
+    it('uses unsignedBigInteger for id column when all targets use BigInt', () => {
+      const bigIntOnlySchemas: SchemaCollection = {
+        Post: {
+          name: 'Post',
+          kind: 'object',
+          filePath: '/schemas/Post.yaml',
+          relativePath: '/schemas/Post.yaml',
+          properties: {},
+          // No idType = default BigInt
+        },
+        Comment: {
+          name: 'Comment',
+          kind: 'object',
+          filePath: '/schemas/Comment.yaml',
+          relativePath: '/schemas/Comment.yaml',
+          properties: {},
+          // No idType = default BigInt
+        },
+      };
+
+      const result = generatePolymorphicColumns(
+        'commentable',
+        {
+          type: 'Association',
+          relation: 'MorphTo',
+          targets: ['Post', 'Comment'],
+        } as any,
+        bigIntOnlySchemas
+      );
+
+      expect(result).not.toBeNull();
+      // All BigInt targets use unsignedBigInteger
+      expect(result!.idColumn.method).toBe('unsignedBigInteger');
+      expect(result!.idColumn.args).toEqual(['commentable_id']);
     });
 
     it('converts camelCase property name to snake_case', () => {

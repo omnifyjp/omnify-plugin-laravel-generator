@@ -364,11 +364,14 @@ export function generateMigrations(
   // Sort schemas by FK dependencies (topological sort)
   const sortedSchemas = topologicalSort(schemas);
 
+  // Generate base timestamp ONCE for all migrations to ensure consistent ordering
+  // This prevents timestamp drift when generateTimestamp() was called inside loops
+  const baseTimestamp = options.timestamp ?? generateTimestamp();
+
   // Generate main table migrations in dependency order
   for (const schema of sortedSchemas) {
     // Generate timestamp with offset to ensure unique filenames
-    const timestamp = options.timestamp ?? generateTimestamp();
-    const offsetTimestamp = incrementTimestamp(timestamp, timestampOffset);
+    const offsetTimestamp = incrementTimestamp(baseTimestamp, timestampOffset);
     timestampOffset++;
 
     const blueprint = schemaToBlueprint(schema, schemas, {
@@ -414,8 +417,7 @@ export function generateMigrations(
 
       pivotTablesGenerated.add(pivot.tableName);
 
-      const timestamp = options.timestamp ?? generateTimestamp();
-      const offsetTimestamp = incrementTimestamp(timestamp, timestampOffset);
+      const offsetTimestamp = incrementTimestamp(baseTimestamp, timestampOffset);
       timestampOffset++;
 
       const blueprint = generatePivotTableBlueprint(pivot);

@@ -530,13 +530,15 @@ export function generateMigrationsFromChanges(
   const migrations: MigrationFile[] = [];
   let timestampOffset = 0;
 
+  // Generate base timestamp ONCE for all migrations to ensure consistent ordering
+  const baseTimestamp = options.timestamp ?? generateTimestamp();
+
   const getNextTimestamp = () => {
-    const ts = options.timestamp ?? generateTimestamp();
     const offset = timestampOffset++;
-    if (offset === 0) return ts;
+    if (offset === 0) return baseTimestamp;
 
     // Increment seconds
-    const parts = ts.split('_');
+    const parts = baseTimestamp.split('_');
     if (parts.length >= 4) {
       const timePart = parts[3] ?? '000000';
       const secs = parseInt(timePart.substring(4, 6), 10) + offset;
@@ -544,7 +546,7 @@ export function generateMigrationsFromChanges(
       parts[3] = timePart.substring(0, 4) + newSecs;
       return parts.join('_');
     }
-    return ts;
+    return baseTimestamp;
   };
 
   for (const change of changes) {
