@@ -2,6 +2,8 @@
  * Utility functions for Laravel generator.
  */
 
+import pluralizeLib from 'pluralize';
+
 /**
  * Convert a string to snake_case.
  */
@@ -30,15 +32,44 @@ export function toCamelCase(str: string): string {
 }
 
 /**
- * Simple pluralization (English).
+ * Pluralize an English word.
+ * Uses the battle-tested 'pluralize' library (4.4M+ weekly downloads).
+ * 
+ * Note: Database table/column names are always in English by Laravel convention,
+ * regardless of the application's display language (Japanese, Vietnamese, etc.).
+ * 
+ * @example
+ * pluralize('user') // 'users'
+ * pluralize('category') // 'categories'
+ * pluralize('branch') // 'branches'
+ * pluralize('child') // 'children'
+ * pluralize('person') // 'people'
  */
 export function pluralize(word: string): string {
-  if (word.endsWith('y') && !['ay', 'ey', 'iy', 'oy', 'uy'].some(v => word.endsWith(v))) {
-    return word.slice(0, -1) + 'ies';
-  }
-  if (word.endsWith('s') || word.endsWith('x') || word.endsWith('z') ||
-      word.endsWith('ch') || word.endsWith('sh')) {
-    return word + 'es';
-  }
-  return word + 's';
+  return pluralizeLib.plural(word);
+}
+
+/**
+ * Singularize an English word.
+ * Uses the battle-tested 'pluralize' library (4.4M+ weekly downloads).
+ * 
+ * Handles:
+ * - Regular plurals: users → user, posts → post
+ * - Words ending in -ies: categories → category
+ * - Words ending in -ches/-shes/-xes: branches → branch, boxes → box
+ * - Irregular words: children → child, people → person, mice → mouse
+ * - Uncountable words: equipment, information (returned as-is)
+ * 
+ * Note: Database table/column names are always in English by Laravel convention,
+ * regardless of the application's display language (Japanese, Vietnamese, etc.).
+ * 
+ * @example
+ * singularize('users') // 'user'
+ * singularize('categories') // 'category'
+ * singularize('branches') // 'branch'
+ * singularize('children') // 'child'
+ * singularize('people') // 'person'
+ */
+export function singularize(word: string): string {
+  return pluralizeLib.singular(word);
 }

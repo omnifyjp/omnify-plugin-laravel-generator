@@ -1,6 +1,6 @@
 {
   "name": "@famgia/omnify-laravel",
-  "version": "0.0.168",
+  "version": "0.0.169",
   "description": "Laravel migration and TypeScript type generator for omnify-schema",
   "type": "module",
   "main": "./dist/index.js",
@@ -41,8 +41,12 @@
     "postinstall": "node scripts/postinstall.js"
   },
   "dependencies": {
-    "@famgia/omnify-types": "workspace:*",
+    "@famgia/omnify-atlas": "workspace:*",
     "@famgia/omnify-core": "workspace:*",
-    "@famgia/omnify-atlas": "workspace:*"
+    "@famgia/omnify-types": "workspace:*",
+    "pluralize": "^8.0.0"
+  },
+  "devDependencies": {
+    "@types/pluralize": "^0.0.33"
   }
 }

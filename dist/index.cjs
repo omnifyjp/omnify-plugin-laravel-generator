@@ -1,7 +1,9 @@
 "use strict";
+var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __export = (target, all) => {
   for (var name in all)
@@ -15,6 +17,14 @@ var __copyProps = (to, from, except, desc) => {
   }
   return to;
 };
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // src/index.ts
@@ -57,6 +67,27 @@ module.exports = __toCommonJS(index_exports);
 
 // src/migration/schema-builder.ts
 var import_omnify_types = require("@famgia/omnify-types");
+
+// src/utils.ts
+var import_pluralize = __toESM(require("pluralize"), 1);
+function toSnakeCase(str) {
+  return str.replace(/([A-Z])/g, "_$1").replace(/^_/, "").toLowerCase();
+}
+function toPascalCase(str) {
+  return str.replace(/[-_](.)/g, (_, c) => c.toUpperCase()).replace(/^(.)/, (_, c) => c.toUpperCase());
+}
+function toCamelCase(str) {
+  const pascal = toPascalCase(str);
+  return pascal.charAt(0).toLowerCase() + pascal.slice(1);
+}
+function pluralize(word) {
+  return import_pluralize.default.plural(word);
+}
+function singularize(word) {
+  return import_pluralize.default.singular(word);
+}
+
+// src/migration/schema-builder.ts
 var TYPE_METHOD_MAP = {
   String: "string",
   TinyInt: "tinyInteger",
@@ -670,8 +701,8 @@ function generatePivotTableName(sourceTable, targetTable, customName) {
     return customName;
   }
   const tables = [sourceTable, targetTable].sort();
-  const singular1 = tables[0].replace(/ies$/, "y").replace(/s$/, "");
-  const singular2 = tables[1].replace(/ies$/, "y").replace(/s$/, "");
+  const singular1 = singularize(tables[0]);
+  const singular2 = singularize(tables[1]);
   return `${singular1}_${singular2}`;
 }
 function extractManyToManyRelations(schema, allSchemas) {
@@ -726,8 +757,8 @@ function extractManyToManyRelations(schema, allSchemas) {
       continue;
     }
     const pivotTableName = generatePivotTableName(sourceTable, targetTable, assocProp.joinTable);
-    const sourceColumn = sourceTable.replace(/ies$/, "y").replace(/s$/, "") + "_id";
-    const targetColumn = targetTable.replace(/ies$/, "y").replace(/s$/, "") + "_id";
+    const sourceColumn = singularize(sourceTable) + "_id";
+    const targetColumn = singularize(targetTable) + "_id";
     const pivotFields = [];
     if (assocProp.pivotFields) {
       for (const [fieldName, fieldDef] of Object.entries(assocProp.pivotFields)) {
@@ -888,7 +919,7 @@ function extractMorphToManyRelations(schema, allSchemas) {
     }
     const defaultTableName = targetTable.replace(/s$/, "") + "ables";
     const tableName = assocProp.joinTable ?? defaultTableName;
-    const targetColumn = targetTable.replace(/ies$/, "y").replace(/s$/, "") + "_id";
+    const targetColumn = singularize(targetTable) + "_id";
     const morphName = propName.replace(/s$/, "") + "able";
     morphPivotTables.push({
       tableName,
@@ -1682,29 +1713,6 @@ function generateMigrationsFromChanges(changes, options = {}) {
 
 // src/model/generator.ts
 var import_omnify_types2 = require("@famgia/omnify-types");
-
-// src/utils.ts
-function toSnakeCase(str) {
-  return str.replace(/([A-Z])/g, "_$1").replace(/^_/, "").toLowerCase();
-}
-function toPascalCase(str) {
-  return str.replace(/[-_](.)/g, (_, c) => c.toUpperCase()).replace(/^(.)/, (_, c) => c.toUpperCase());
-}
-function toCamelCase(str) {
-  const pascal = toPascalCase(str);
-  return pascal.charAt(0).toLowerCase() + pascal.slice(1);
-}
-function pluralize(word) {
-  if (word.endsWith("y") && !["ay", "ey", "iy", "oy", "uy"].some((v) => word.endsWith(v))) {
-    return word.slice(0, -1) + "ies";
-  }
-  if (word.endsWith("s") || word.endsWith("x") || word.endsWith("z") || word.endsWith("ch") || word.endsWith("sh")) {
-    return word + "es";
-  }
-  return word + "s";
-}
-
-// src/model/generator.ts
 var DEFAULT_OPTIONS = {
   baseModelNamespace: "App\\Models\\OmnifyBase",
   modelNamespace: "App\\Models",

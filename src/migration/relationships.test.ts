@@ -404,6 +404,50 @@ describe('ManyToMany Relationship', () => {
     expect(generatePivotTableName('categories', 'articles')).toBe('article_category');
   });
 
+  it('generates correct pivot table name for words ending in "ch" (branches, batches, etc.)', () => {
+    // This tests the fix for the bug where "branches" was incorrectly singularized to "branche" instead of "branch"
+    expect(generatePivotTableName('branches', 'users')).toBe('branch_user');
+    expect(generatePivotTableName('batches', 'items')).toBe('batch_item');
+    expect(generatePivotTableName('matches', 'teams')).toBe('match_team');
+    expect(generatePivotTableName('searches', 'results')).toBe('result_search');
+  });
+
+  it('generates correct pivot column names for Branch model', () => {
+    const schema: LoadedSchema = {
+      name: 'Branch',
+      kind: 'object',
+      filePath: '/schemas/Branch.yaml',
+      relativePath: '/schemas/Branch.yaml',
+      properties: {
+        users: {
+          type: 'Association',
+          relation: 'ManyToMany',
+          target: 'User',
+          joinTable: 'branch_user',
+          owning: true,
+        } as any,
+      },
+    };
+
+    const schemas: SchemaCollection = {
+      Branch: schema,
+      User: {
+        name: 'User',
+        kind: 'object',
+        filePath: '/schemas/User.yaml',
+        relativePath: '/schemas/User.yaml',
+        properties: {},
+      },
+    };
+
+    const pivots = extractManyToManyRelations(schema, schemas);
+    expect(pivots.length).toBe(1);
+    expect(pivots[0]?.tableName).toBe('branch_user');
+    // Critical: should be 'branch_id', NOT 'branche_id'
+    expect(pivots[0]?.sourceColumn).toBe('branch_id');
+    expect(pivots[0]?.targetColumn).toBe('user_id');
+  });
+
   it('uses custom join table name when provided', () => {
     const schema: LoadedSchema = {
       name: 'User',

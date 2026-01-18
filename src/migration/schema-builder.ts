@@ -13,6 +13,7 @@ import type {
   IndexDefinition,
   TableBlueprint,
 } from './types.js';
+import { singularize } from '../utils.js';
 
 /**
  * Maps Omnify property types to Laravel column methods.
@@ -1033,9 +1034,9 @@ export function generatePivotTableName(
 
   // Sort alphabetically for consistent naming
   const tables = [sourceTable, targetTable].sort();
-  // Remove trailing 's' and join with underscore
-  const singular1 = tables[0]!.replace(/ies$/, 'y').replace(/s$/, '');
-  const singular2 = tables[1]!.replace(/ies$/, 'y').replace(/s$/, '');
+  // Singularize table names and join with underscore
+  const singular1 = singularize(tables[0]!);
+  const singular2 = singularize(tables[1]!);
   return `${singular1}_${singular2}`;
 }
 
@@ -1141,8 +1142,8 @@ export function extractManyToManyRelations(
     const pivotTableName = generatePivotTableName(sourceTable, targetTable, assocProp.joinTable);
 
     // Column names: singular form of table name + _id
-    const sourceColumn = sourceTable.replace(/ies$/, 'y').replace(/s$/, '') + '_id';
-    const targetColumn = targetTable.replace(/ies$/, 'y').replace(/s$/, '') + '_id';
+    const sourceColumn = singularize(sourceTable) + '_id';
+    const targetColumn = singularize(targetTable) + '_id';
 
     // Extract pivot fields
     const pivotFields: PivotFieldInfo[] = [];
@@ -1375,7 +1376,7 @@ export function extractMorphToManyRelations(
     const tableName = assocProp.joinTable ?? defaultTableName;
 
     // Column name for the target side (e.g., tag_id for Tag)
-    const targetColumn = targetTable.replace(/ies$/, 'y').replace(/s$/, '') + '_id';
+    const targetColumn = singularize(targetTable) + '_id';
 
     // MorphName is typically the property name or a convention like 'taggable'
     const morphName = propName.replace(/s$/, '') + 'able';
