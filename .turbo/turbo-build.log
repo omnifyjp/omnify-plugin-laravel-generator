@@ -1,6 +1,6 @@
 
 
-> @famgia/omnify-laravel@0.0.172 build /Users/f.satoshi/Herd/omnify-ts/packages/omnify-plugin-laravel-generator
+> @famgia/omnify-laravel@0.0.173 build /Users/f.satoshi/Herd/omnify-ts/packages/omnify-plugin-laravel-generator
 > tsup
 
 [34mCLI[39m Building entry: src/index.ts, src/plugin.ts
@@ -17,14 +17,14 @@
 [32mESM[39m [1mdist/index.js.map          [22m[32m71.00 B[39m
 [32mESM[39m [1mdist/plugin.js.map         [22m[32m71.00 B[39m
 [32mESM[39m [1mdist/chunk-TSGLY4IZ.js.map [22m[32m352.49 KB[39m
-[32mESM[39m ⚡️ Build success in 37ms
+[32mESM[39m ⚡️ Build success in 86ms
 [32mCJS[39m [1mdist/plugin.cjs     [22m[32m170.05 KB[39m
 [32mCJS[39m [1mdist/index.cjs      [22m[32m178.07 KB[39m
 [32mCJS[39m [1mdist/plugin.cjs.map [22m[32m349.27 KB[39m
 [32mCJS[39m [1mdist/index.cjs.map  [22m[32m354.57 KB[39m
-[32mCJS[39m ⚡️ Build success in 37ms
+[32mCJS[39m ⚡️ Build success in 86ms
 DTS Build start
-DTS ⚡️ Build success in 768ms
+DTS ⚡️ Build success in 1044ms
 DTS dist/index.d.ts   17.63 KB
 DTS dist/plugin.d.ts  4.21 KB
 DTS dist/index.d.cts  17.63 KB
