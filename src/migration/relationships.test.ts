@@ -936,18 +936,18 @@ describe('ManyToMany Relationship', () => {
             team_role: {
               type: 'Enum',
               enum: [
-                { 
-                  value: 'leader', 
+                {
+                  value: 'leader',
                   label: { en: 'Team Leader', ja: 'チームリーダー', vi: 'Trưởng nhóm' },
                   extra: { canManage: true }
                 },
-                { 
-                  value: 'member', 
+                {
+                  value: 'member',
                   label: { en: 'Team Member', ja: 'チームメンバー', vi: 'Thành viên' },
                   extra: { canManage: false }
                 },
-                { 
-                  value: 'observer', 
+                {
+                  value: 'observer',
                   label: { en: 'Observer', ja: 'オブザーバー', vi: 'Quan sát viên' },
                   extra: { canManage: false }
                 },
