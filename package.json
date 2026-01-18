@@ -1,6 +1,6 @@
 {
   "name": "@famgia/omnify-laravel",
-  "version": "0.0.170",
+  "version": "0.0.171",
   "description": "Laravel migration and TypeScript type generator for omnify-schema",
   "type": "module",
   "main": "./dist/index.js",
