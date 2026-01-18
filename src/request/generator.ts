@@ -5,9 +5,9 @@
  * Creates base requests (auto-generated) and user requests (created once).
  */
 
-import type { LoadedSchema, PropertyDefinition, SchemaCollection, LocalizedString, CustomTypeDefinition, AssociationDefinition } from '@famgia/omnify-types';
+import type { LoadedSchema, PropertyDefinition, SchemaCollection, LocalizedString, CustomTypeDefinition, AssociationDefinition, InlineEnumValue } from '@famgia/omnify-types';
 import { isLocaleMap } from '@famgia/omnify-types';
-import { pluralize, toSnakeCase, toPascalCase } from '../utils.js';
+import { pluralize, toSnakeCase, toPascalCase, getEnumStringValues } from '../utils.js';
 
 /**
  * Options for request generation.
@@ -282,7 +282,8 @@ function formatRequestOpenApiProperty(prop: RequestOpenApiProperty, indent: stri
     parts.push(`nullable: true`);
   }
   if (prop.enum) {
-    const enumStr = prop.enum.map(v => `'${v}'`).join(', ');
+    const enumValues = getEnumStringValues(prop.enum as readonly (string | InlineEnumValue)[]);
+    const enumStr = enumValues.map(v => `'${v}'`).join(', ');
     parts.push(`enum: [${enumStr}]`);
   }
   if (prop.example !== undefined) {
@@ -431,7 +432,8 @@ function generateStoreRules(
     case 'EnumRef':
       rules.push("'string'");
       if (prop.enum && Array.isArray(prop.enum)) {
-        const values = prop.enum.map((v: string) => `'${v}'`).join(', ');
+        const enumValues = getEnumStringValues(prop.enum as readonly (string | InlineEnumValue)[]);
+        const values = enumValues.map(v => `'${v}'`).join(', ');
         rules.push(`Rule::in([${values}])`);
       }
       break;
@@ -572,7 +574,8 @@ function generateUpdateRules(
     case 'EnumRef':
       rules.push("'string'");
       if (prop.enum && Array.isArray(prop.enum)) {
-        const values = prop.enum.map((v: string) => `'${v}'`).join(', ');
+        const enumValues = getEnumStringValues(prop.enum as readonly (string | InlineEnumValue)[]);
+        const values = enumValues.map(v => `'${v}'`).join(', ');
         rules.push(`Rule::in([${values}])`);
       }
       break;

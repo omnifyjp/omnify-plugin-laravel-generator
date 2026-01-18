@@ -4,9 +4,10 @@
  * Generates TypeScript enums from schema enum definitions.
  */
 
-import type { LoadedSchema, SchemaCollection } from '@famgia/omnify-types';
+import type { LoadedSchema, SchemaCollection, InlineEnumValue } from '@famgia/omnify-types';
 import { resolveLocalizedString } from '@famgia/omnify-types';
 import type { TSEnum, TSEnumValue, TSTypeAlias } from './types.js';
+import { getEnumStringValues } from '../utils.js';
 
 /**
  * Converts enum value to valid TypeScript enum member name.
@@ -113,14 +114,15 @@ export function extractInlineEnums(schemas: SchemaCollection): TSTypeAlias[] {
 
     for (const [propName, property] of Object.entries(schema.properties)) {
       if (property.type === 'Enum') {
-        const enumProp = property as { enum?: readonly string[]; displayName?: string };
+        const enumProp = property as { enum?: readonly (string | InlineEnumValue)[]; displayName?: string };
 
         // Only handle inline array enums (not references to named enums)
         if (Array.isArray(enumProp.enum) && enumProp.enum.length > 0) {
           const typeName = `${schema.name}${propName.charAt(0).toUpperCase() + propName.slice(1)}`;
+          const enumValues = getEnumStringValues(enumProp.enum);
           typeAliases.push({
             name: typeName,
-            type: enumProp.enum.map(v => `'${v}'`).join(' | '),
+            type: enumValues.map(v => `'${v}'`).join(' | '),
             comment: enumProp.displayName ?? `${schema.name} ${propName} enum`,
           });
         }

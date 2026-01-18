@@ -70,6 +70,17 @@ var import_omnify_types = require("@famgia/omnify-types");
 
 // src/utils.ts
 var import_pluralize = __toESM(require("pluralize"), 1);
+function getEnumStringValues(enumArray) {
+  return enumArray.map((item) => {
+    if (typeof item === "string") {
+      return item;
+    }
+    if (typeof item === "object" && item !== null && "value" in item) {
+      return item.value;
+    }
+    return String(item);
+  });
+}
 function toSnakeCase(str) {
   return str.replace(/([A-Z])/g, "_$1").replace(/^_/, "").toLowerCase();
 }
@@ -162,7 +173,8 @@ function propertyToColumnMethod(propertyName, property, options = {}) {
   if (property.type === "Enum") {
     const enumProp = property;
     if (enumProp.enum && enumProp.enum.length > 0) {
-      args.push(enumProp.enum);
+      const enumValues = getEnumStringValues(enumProp.enum);
+      args.push(enumValues);
     }
   }
   const baseProp = property;
@@ -3511,7 +3523,8 @@ function formatRequestOpenApiProperty(prop, indent) {
     parts.push(`nullable: true`);
   }
   if (prop.enum) {
-    const enumStr = prop.enum.map((v) => `'${v}'`).join(", ");
+    const enumValues = getEnumStringValues(prop.enum);
+    const enumStr = enumValues.map((v) => `'${v}'`).join(", ");
     parts.push(`enum: [${enumStr}]`);
   }
   if (prop.example !== void 0) {
@@ -3616,7 +3629,8 @@ function generateStoreRules(propName, propDef, schema, schemas, options) {
     case "EnumRef":
       rules.push("'string'");
       if (prop.enum && Array.isArray(prop.enum)) {
-        const values = prop.enum.map((v) => `'${v}'`).join(", ");
+        const enumValues = getEnumStringValues(prop.enum);
+        const values = enumValues.map((v) => `'${v}'`).join(", ");
         rules.push(`Rule::in([${values}])`);
       }
       break;
@@ -3725,7 +3739,8 @@ function generateUpdateRules(propName, propDef, schema, schemas, options) {
     case "EnumRef":
       rules.push("'string'");
       if (prop.enum && Array.isArray(prop.enum)) {
-        const values = prop.enum.map((v) => `'${v}'`).join(", ");
+        const enumValues = getEnumStringValues(prop.enum);
+        const values = enumValues.map((v) => `'${v}'`).join(", ");
         rules.push(`Rule::in([${values}])`);
       }
       break;

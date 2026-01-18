@@ -2,7 +2,37 @@
  * Utility functions for Laravel generator.
  */
 
+import type { InlineEnumValue } from '@famgia/omnify-types';
 import pluralizeLib from 'pluralize';
+
+/**
+ * Extract string values from enum array (handles both string and InlineEnumValue formats).
+ *
+ * @example
+ * // Simple strings
+ * getEnumStringValues(['active', 'inactive']) // ['active', 'inactive']
+ *
+ * // EnumValue objects with labels and extra metadata
+ * getEnumStringValues([
+ *   { value: 'active', label: { en: 'Active' }, extra: { color: 'green' } },
+ *   { value: 'inactive', label: { en: 'Inactive' } }
+ * ]) // ['active', 'inactive']
+ *
+ * // Mixed array
+ * getEnumStringValues(['simple', { value: 'complex' }]) // ['simple', 'complex']
+ */
+export function getEnumStringValues(enumArray: readonly (string | InlineEnumValue)[]): string[] {
+  return enumArray.map(item => {
+    if (typeof item === 'string') {
+      return item;
+    }
+    // Handle InlineEnumValue object
+    if (typeof item === 'object' && item !== null && 'value' in item) {
+      return item.value;
+    }
+    return String(item);
+  });
+}
 
 /**
  * Convert a string to snake_case.

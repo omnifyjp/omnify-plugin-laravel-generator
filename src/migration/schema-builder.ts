@@ -13,7 +13,7 @@ import type {
   IndexDefinition,
   TableBlueprint,
 } from './types.js';
-import { singularize } from '../utils.js';
+import { singularize, getEnumStringValues } from '../utils.js';
 
 /**
  * Maps Omnify property types to Laravel column methods.
@@ -146,11 +146,12 @@ export function propertyToColumnMethod(
     args.push(precision, scale);
   }
 
-  // Handle enum values
+  // Handle enum values (supports both string[] and InlineEnumValue[])
   if (property.type === 'Enum') {
-    const enumProp = property as { enum?: readonly string[] };
+    const enumProp = property as { enum?: readonly (string | InlineEnumValue)[] };
     if (enumProp.enum && enumProp.enum.length > 0) {
-      args.push(enumProp.enum as unknown as string);
+      const enumValues = getEnumStringValues(enumProp.enum);
+      args.push(enumValues as unknown as string);
     }
   }
 

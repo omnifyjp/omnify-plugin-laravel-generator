@@ -4,9 +4,10 @@
  * Generates TypeScript interfaces from schemas.
  */
 
-import type { LoadedSchema, PropertyDefinition, SchemaCollection } from '@famgia/omnify-types';
+import type { LoadedSchema, PropertyDefinition, SchemaCollection, InlineEnumValue } from '@famgia/omnify-types';
 import { resolveLocalizedString } from '@famgia/omnify-types';
 import type { TSInterface, TSProperty, TypeScriptOptions } from './types.js';
+import { getEnumStringValues } from '../utils.js';
 
 /**
  * Maps Omnify property types to TypeScript types.
@@ -119,14 +120,15 @@ export function getPropertyType(
 
   // Handle enum types
   if (property.type === 'Enum') {
-    const enumProp = property as { enum?: string | readonly string[] };
+    const enumProp = property as { enum?: string | readonly (string | InlineEnumValue)[] };
     if (typeof enumProp.enum === 'string') {
       // Reference to a named enum
       return enumProp.enum;
     }
     if (Array.isArray(enumProp.enum)) {
-      // Inline enum - create union type
-      return enumProp.enum.map(v => `'${v}'`).join(' | ');
+      // Inline enum - create union type (handles both string[] and InlineEnumValue[])
+      const enumValues = getEnumStringValues(enumProp.enum);
+      return enumValues.map(v => `'${v}'`).join(' | ');
     }
   }
 

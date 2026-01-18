@@ -1,6 +1,6 @@
 import {
   laravelPlugin
-} from "./chunk-TSGLY4IZ.js";
+} from "./chunk-O7CQJR4A.js";
 export {
   laravelPlugin as default,
   laravelPlugin
