@@ -213,7 +213,7 @@ declare function formatIndex(index: IndexDefinition): string;
 interface PivotFieldInfo {
     /** Field name in snake_case */
     name: string;
-    /** Property type (String, Int, Boolean, Timestamp, etc.) */
+    /** Property type (String, Int, Boolean, Timestamp, Enum, etc.) */
     type: string;
     /** Whether the field can be null */
     nullable?: boolean;
@@ -223,6 +223,8 @@ interface PivotFieldInfo {
     length?: number;
     /** Whether the field is unsigned (for numeric types) */
     unsigned?: boolean;
+    /** Enum values (only for type: Enum) - extracted string values */
+    enum?: readonly string[];
 }
 /**
  * Pivot table information for ManyToMany relationships.

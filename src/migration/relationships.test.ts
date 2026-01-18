@@ -11,6 +11,7 @@ import {
   extractManyToManyRelations,
   generatePivotTableBlueprint,
   generatePivotTableName,
+  formatColumnMethod,
 } from './schema-builder.js';
 import type { LoadedSchema, SchemaCollection } from '@famgia/omnify-types';
 
@@ -618,6 +619,640 @@ describe('ManyToMany Relationship', () => {
     expect(invitedBy?.type).toBe('BigInt');
     expect(invitedBy?.nullable).toBe(true);
     expect(invitedBy?.unsigned).toBe(true);
+  });
+
+  it('extracts Enum pivot fields with enum values', () => {
+    const schema: LoadedSchema = {
+      name: 'Organization',
+      kind: 'object',
+      filePath: '/schemas/Organization.yaml',
+      relativePath: '/schemas/Organization.yaml',
+      properties: {
+        users: {
+          type: 'Association',
+          relation: 'ManyToMany',
+          target: 'User',
+          joinTable: 'organization_user',
+          owning: true,
+          pivotFields: {
+            org_role: {
+              type: 'Enum',
+              enum: [
+                { value: 'owner', label: { en: 'Owner', ja: 'オーナー' } },
+                { value: 'admin', label: { en: 'Administrator', ja: '管理者' } },
+                { value: 'member', label: { en: 'Member', ja: 'メンバー' } },
+              ],
+              default: 'member',
+            },
+            status: {
+              type: 'Enum',
+              enum: ['active', 'inactive', 'pending'],
+              nullable: true,
+            },
+          },
+        } as any,
+      },
+    };
+
+    const schemas: SchemaCollection = {
+      Organization: schema,
+      User: {
+        name: 'User',
+        kind: 'object',
+        filePath: '/schemas/User.yaml',
+        relativePath: '/schemas/User.yaml',
+        properties: {},
+      },
+    };
+
+    const pivots = extractManyToManyRelations(schema, schemas);
+
+    expect(pivots.length).toBe(1);
+    expect(pivots[0]?.pivotFields).toBeDefined();
+    expect(pivots[0]?.pivotFields?.length).toBe(2);
+
+    // Check org_role field with object enum values (labels should be extracted as string values)
+    const orgRole = pivots[0]?.pivotFields?.find(f => f.name === 'org_role');
+    expect(orgRole?.type).toBe('Enum');
+    expect(orgRole?.enum).toEqual(['owner', 'admin', 'member']);
+    expect(orgRole?.default).toBe('member');
+
+    // Check status field with simple string enum values
+    const status = pivots[0]?.pivotFields?.find(f => f.name === 'status');
+    expect(status?.type).toBe('Enum');
+    expect(status?.enum).toEqual(['active', 'inactive', 'pending']);
+    expect(status?.nullable).toBe(true);
+  });
+
+  it('generates pivot table blueprint with Enum columns', () => {
+    const schema: LoadedSchema = {
+      name: 'Organization',
+      kind: 'object',
+      filePath: '/schemas/Organization.yaml',
+      relativePath: '/schemas/Organization.yaml',
+      properties: {
+        users: {
+          type: 'Association',
+          relation: 'ManyToMany',
+          target: 'User',
+          joinTable: 'organization_user',
+          owning: true,
+          pivotFields: {
+            org_role: {
+              type: 'Enum',
+              enum: ['owner', 'admin', 'member'],
+              default: 'member',
+            },
+          },
+        } as any,
+      },
+    };
+
+    const schemas: SchemaCollection = {
+      Organization: schema,
+      User: {
+        name: 'User',
+        kind: 'object',
+        filePath: '/schemas/User.yaml',
+        relativePath: '/schemas/User.yaml',
+        properties: {},
+      },
+    };
+
+    const pivots = extractManyToManyRelations(schema, schemas);
+    const blueprint = generatePivotTableBlueprint(pivots[0]!);
+
+    // Find the org_role column
+    const orgRoleCol = blueprint.columns.find(c => c.name === 'org_role');
+    expect(orgRoleCol).toBeDefined();
+    expect(orgRoleCol?.method).toBe('enum');
+    expect(orgRoleCol?.args).toEqual(['org_role', ['owner', 'admin', 'member']]);
+    expect(orgRoleCol?.modifiers).toContainEqual({ method: 'default', args: ['member'] });
+  });
+
+  it('generates pivot table blueprint with nullable Enum column', () => {
+    const schema: LoadedSchema = {
+      name: 'Organization',
+      kind: 'object',
+      filePath: '/schemas/Organization.yaml',
+      relativePath: '/schemas/Organization.yaml',
+      properties: {
+        users: {
+          type: 'Association',
+          relation: 'ManyToMany',
+          target: 'User',
+          joinTable: 'organization_user',
+          owning: true,
+          pivotFields: {
+            status: {
+              type: 'Enum',
+              enum: ['active', 'inactive', 'pending'],
+              nullable: true,
+            },
+          },
+        } as any,
+      },
+    };
+
+    const schemas: SchemaCollection = {
+      Organization: schema,
+      User: {
+        name: 'User',
+        kind: 'object',
+        filePath: '/schemas/User.yaml',
+        relativePath: '/schemas/User.yaml',
+        properties: {},
+      },
+    };
+
+    const pivots = extractManyToManyRelations(schema, schemas);
+    const blueprint = generatePivotTableBlueprint(pivots[0]!);
+
+    const statusCol = blueprint.columns.find(c => c.name === 'status');
+    expect(statusCol).toBeDefined();
+    expect(statusCol?.method).toBe('enum');
+    expect(statusCol?.args).toEqual(['status', ['active', 'inactive', 'pending']]);
+    expect(statusCol?.modifiers).toContainEqual({ method: 'nullable' });
+  });
+
+  it('generates pivot table blueprint with multiple Enum columns', () => {
+    const schema: LoadedSchema = {
+      name: 'Organization',
+      kind: 'object',
+      filePath: '/schemas/Organization.yaml',
+      relativePath: '/schemas/Organization.yaml',
+      properties: {
+        users: {
+          type: 'Association',
+          relation: 'ManyToMany',
+          target: 'User',
+          joinTable: 'organization_user',
+          owning: true,
+          pivotFields: {
+            org_role: {
+              type: 'Enum',
+              enum: ['owner', 'admin', 'member'],
+              default: 'member',
+            },
+            status: {
+              type: 'Enum',
+              enum: ['active', 'inactive'],
+              nullable: true,
+            },
+            permission_level: {
+              type: 'Enum',
+              enum: ['read', 'write', 'admin'],
+              default: 'read',
+            },
+          },
+        } as any,
+      },
+    };
+
+    const schemas: SchemaCollection = {
+      Organization: schema,
+      User: {
+        name: 'User',
+        kind: 'object',
+        filePath: '/schemas/User.yaml',
+        relativePath: '/schemas/User.yaml',
+        properties: {},
+      },
+    };
+
+    const pivots = extractManyToManyRelations(schema, schemas);
+    const blueprint = generatePivotTableBlueprint(pivots[0]!);
+
+    // Check all three enum columns
+    const orgRoleCol = blueprint.columns.find(c => c.name === 'org_role');
+    expect(orgRoleCol?.method).toBe('enum');
+    expect(orgRoleCol?.args).toEqual(['org_role', ['owner', 'admin', 'member']]);
+    expect(orgRoleCol?.modifiers).toContainEqual({ method: 'default', args: ['member'] });
+
+    const statusCol = blueprint.columns.find(c => c.name === 'status');
+    expect(statusCol?.method).toBe('enum');
+    expect(statusCol?.args).toEqual(['status', ['active', 'inactive']]);
+    expect(statusCol?.modifiers).toContainEqual({ method: 'nullable' });
+
+    const permissionCol = blueprint.columns.find(c => c.name === 'permission_level');
+    expect(permissionCol?.method).toBe('enum');
+    expect(permissionCol?.args).toEqual(['permission_level', ['read', 'write', 'admin']]);
+    expect(permissionCol?.modifiers).toContainEqual({ method: 'default', args: ['read'] });
+  });
+
+  it('generates pivot table blueprint with mixed pivot field types including Enum', () => {
+    const schema: LoadedSchema = {
+      name: 'Organization',
+      kind: 'object',
+      filePath: '/schemas/Organization.yaml',
+      relativePath: '/schemas/Organization.yaml',
+      properties: {
+        users: {
+          type: 'Association',
+          relation: 'ManyToMany',
+          target: 'User',
+          joinTable: 'organization_user',
+          owning: true,
+          pivotFields: {
+            org_role: {
+              type: 'Enum',
+              enum: ['owner', 'admin', 'member'],
+              default: 'member',
+            },
+            joined_at: {
+              type: 'Timestamp',
+              nullable: true,
+            },
+            is_primary: {
+              type: 'Boolean',
+              default: false,
+            },
+            notes: {
+              type: 'Text',
+              nullable: true,
+            },
+            sort_order: {
+              type: 'Int',
+              default: 0,
+            },
+          },
+        } as any,
+      },
+    };
+
+    const schemas: SchemaCollection = {
+      Organization: schema,
+      User: {
+        name: 'User',
+        kind: 'object',
+        filePath: '/schemas/User.yaml',
+        relativePath: '/schemas/User.yaml',
+        properties: {},
+      },
+    };
+
+    const pivots = extractManyToManyRelations(schema, schemas);
+    const blueprint = generatePivotTableBlueprint(pivots[0]!);
+
+    // Check enum column
+    const orgRoleCol = blueprint.columns.find(c => c.name === 'org_role');
+    expect(orgRoleCol?.method).toBe('enum');
+    expect(orgRoleCol?.args).toEqual(['org_role', ['owner', 'admin', 'member']]);
+
+    // Check timestamp column
+    const joinedAtCol = blueprint.columns.find(c => c.name === 'joined_at');
+    expect(joinedAtCol?.method).toBe('timestamp');
+    expect(joinedAtCol?.modifiers).toContainEqual({ method: 'nullable' });
+
+    // Check boolean column
+    const isPrimaryCol = blueprint.columns.find(c => c.name === 'is_primary');
+    expect(isPrimaryCol?.method).toBe('boolean');
+    expect(isPrimaryCol?.modifiers).toContainEqual({ method: 'default', args: [false] });
+
+    // Check text column
+    const notesCol = blueprint.columns.find(c => c.name === 'notes');
+    expect(notesCol?.method).toBe('text');
+
+    // Check int column
+    const sortOrderCol = blueprint.columns.find(c => c.name === 'sort_order');
+    expect(sortOrderCol?.method).toBe('integer');
+    expect(sortOrderCol?.modifiers).toContainEqual({ method: 'default', args: [0] });
+  });
+
+  it('extracts Enum pivot fields with localized labels correctly', () => {
+    const schema: LoadedSchema = {
+      name: 'Team',
+      kind: 'object',
+      filePath: '/schemas/Team.yaml',
+      relativePath: '/schemas/Team.yaml',
+      properties: {
+        members: {
+          type: 'Association',
+          relation: 'ManyToMany',
+          target: 'User',
+          joinTable: 'team_user',
+          owning: true,
+          pivotFields: {
+            team_role: {
+              type: 'Enum',
+              enum: [
+                { 
+                  value: 'leader', 
+                  label: { en: 'Team Leader', ja: 'チームリーダー', vi: 'Trưởng nhóm' },
+                  extra: { canManage: true }
+                },
+                { 
+                  value: 'member', 
+                  label: { en: 'Team Member', ja: 'チームメンバー', vi: 'Thành viên' },
+                  extra: { canManage: false }
+                },
+                { 
+                  value: 'observer', 
+                  label: { en: 'Observer', ja: 'オブザーバー', vi: 'Quan sát viên' },
+                  extra: { canManage: false }
+                },
+              ],
+              default: 'member',
+            },
+          },
+        } as any,
+      },
+    };
+
+    const schemas: SchemaCollection = {
+      Team: schema,
+      User: {
+        name: 'User',
+        kind: 'object',
+        filePath: '/schemas/User.yaml',
+        relativePath: '/schemas/User.yaml',
+        properties: {},
+      },
+    };
+
+    const pivots = extractManyToManyRelations(schema, schemas);
+
+    expect(pivots.length).toBe(1);
+    expect(pivots[0]?.pivotFields?.length).toBe(1);
+
+    const teamRole = pivots[0]?.pivotFields?.find(f => f.name === 'team_role');
+    expect(teamRole?.type).toBe('Enum');
+    // Only string values should be extracted, not labels
+    expect(teamRole?.enum).toEqual(['leader', 'member', 'observer']);
+    expect(teamRole?.default).toBe('member');
+  });
+
+  it('does not include enum field for non-Enum pivot types', () => {
+    const schema: LoadedSchema = {
+      name: 'Organization',
+      kind: 'object',
+      filePath: '/schemas/Organization.yaml',
+      relativePath: '/schemas/Organization.yaml',
+      properties: {
+        users: {
+          type: 'Association',
+          relation: 'ManyToMany',
+          target: 'User',
+          joinTable: 'organization_user',
+          owning: true,
+          pivotFields: {
+            role_name: {
+              type: 'String',
+              length: 50,
+              default: 'member',
+            },
+          },
+        } as any,
+      },
+    };
+
+    const schemas: SchemaCollection = {
+      Organization: schema,
+      User: {
+        name: 'User',
+        kind: 'object',
+        filePath: '/schemas/User.yaml',
+        relativePath: '/schemas/User.yaml',
+        properties: {},
+      },
+    };
+
+    const pivots = extractManyToManyRelations(schema, schemas);
+    const roleName = pivots[0]?.pivotFields?.find(f => f.name === 'role_name');
+
+    expect(roleName?.type).toBe('String');
+    expect(roleName?.enum).toBeUndefined();  // Should not have enum for String type
+  });
+
+  // =============================================================================
+  // PHP Code Generation Tests for Enum Pivot Fields
+  // =============================================================================
+
+  it('generates correct PHP code for Enum pivot column with default', () => {
+    const schema: LoadedSchema = {
+      name: 'Organization',
+      kind: 'object',
+      filePath: '/schemas/Organization.yaml',
+      relativePath: '/schemas/Organization.yaml',
+      properties: {
+        users: {
+          type: 'Association',
+          relation: 'ManyToMany',
+          target: 'User',
+          joinTable: 'organization_user',
+          owning: true,
+          pivotFields: {
+            org_role: {
+              type: 'Enum',
+              enum: ['owner', 'admin', 'member'],
+              default: 'member',
+            },
+          },
+        } as any,
+      },
+    };
+
+    const schemas: SchemaCollection = {
+      Organization: schema,
+      User: {
+        name: 'User',
+        kind: 'object',
+        filePath: '/schemas/User.yaml',
+        relativePath: '/schemas/User.yaml',
+        properties: {},
+      },
+    };
+
+    const pivots = extractManyToManyRelations(schema, schemas);
+    const blueprint = generatePivotTableBlueprint(pivots[0]!);
+    const orgRoleCol = blueprint.columns.find(c => c.name === 'org_role')!;
+    const phpCode = formatColumnMethod(orgRoleCol);
+
+    expect(phpCode).toBe("$table->enum('org_role', ['owner', 'admin', 'member'])->default('member');");
+  });
+
+  it('generates correct PHP code for Enum pivot column with nullable', () => {
+    const schema: LoadedSchema = {
+      name: 'Organization',
+      kind: 'object',
+      filePath: '/schemas/Organization.yaml',
+      relativePath: '/schemas/Organization.yaml',
+      properties: {
+        users: {
+          type: 'Association',
+          relation: 'ManyToMany',
+          target: 'User',
+          joinTable: 'organization_user',
+          owning: true,
+          pivotFields: {
+            status: {
+              type: 'Enum',
+              enum: ['active', 'inactive', 'pending'],
+              nullable: true,
+            },
+          },
+        } as any,
+      },
+    };
+
+    const schemas: SchemaCollection = {
+      Organization: schema,
+      User: {
+        name: 'User',
+        kind: 'object',
+        filePath: '/schemas/User.yaml',
+        relativePath: '/schemas/User.yaml',
+        properties: {},
+      },
+    };
+
+    const pivots = extractManyToManyRelations(schema, schemas);
+    const blueprint = generatePivotTableBlueprint(pivots[0]!);
+    const statusCol = blueprint.columns.find(c => c.name === 'status')!;
+    const phpCode = formatColumnMethod(statusCol);
+
+    expect(phpCode).toBe("$table->enum('status', ['active', 'inactive', 'pending'])->nullable();");
+  });
+
+  it('generates correct PHP code for Enum pivot column with nullable and default', () => {
+    const schema: LoadedSchema = {
+      name: 'Team',
+      kind: 'object',
+      filePath: '/schemas/Team.yaml',
+      relativePath: '/schemas/Team.yaml',
+      properties: {
+        members: {
+          type: 'Association',
+          relation: 'ManyToMany',
+          target: 'User',
+          joinTable: 'team_user',
+          owning: true,
+          pivotFields: {
+            membership_type: {
+              type: 'Enum',
+              enum: ['permanent', 'temporary', 'guest'],
+              nullable: true,
+              default: 'permanent',
+            },
+          },
+        } as any,
+      },
+    };
+
+    const schemas: SchemaCollection = {
+      Team: schema,
+      User: {
+        name: 'User',
+        kind: 'object',
+        filePath: '/schemas/User.yaml',
+        relativePath: '/schemas/User.yaml',
+        properties: {},
+      },
+    };
+
+    const pivots = extractManyToManyRelations(schema, schemas);
+    const blueprint = generatePivotTableBlueprint(pivots[0]!);
+    const membershipCol = blueprint.columns.find(c => c.name === 'membership_type')!;
+    const phpCode = formatColumnMethod(membershipCol);
+
+    expect(phpCode).toBe("$table->enum('membership_type', ['permanent', 'temporary', 'guest'])->nullable()->default('permanent');");
+  });
+
+  it('generates correct PHP code for multiple Enum pivot columns', () => {
+    const schema: LoadedSchema = {
+      name: 'Project',
+      kind: 'object',
+      filePath: '/schemas/Project.yaml',
+      relativePath: '/schemas/Project.yaml',
+      properties: {
+        users: {
+          type: 'Association',
+          relation: 'ManyToMany',
+          target: 'User',
+          joinTable: 'project_user',
+          owning: true,
+          pivotFields: {
+            role: {
+              type: 'Enum',
+              enum: ['owner', 'manager', 'developer', 'viewer'],
+              default: 'viewer',
+            },
+            access_level: {
+              type: 'Enum',
+              enum: ['full', 'limited', 'readonly'],
+              default: 'readonly',
+            },
+          },
+        } as any,
+      },
+    };
+
+    const schemas: SchemaCollection = {
+      Project: schema,
+      User: {
+        name: 'User',
+        kind: 'object',
+        filePath: '/schemas/User.yaml',
+        relativePath: '/schemas/User.yaml',
+        properties: {},
+      },
+    };
+
+    const pivots = extractManyToManyRelations(schema, schemas);
+    const blueprint = generatePivotTableBlueprint(pivots[0]!);
+
+    const roleCol = blueprint.columns.find(c => c.name === 'role')!;
+    const accessCol = blueprint.columns.find(c => c.name === 'access_level')!;
+
+    expect(formatColumnMethod(roleCol)).toBe(
+      "$table->enum('role', ['owner', 'manager', 'developer', 'viewer'])->default('viewer');"
+    );
+    expect(formatColumnMethod(accessCol)).toBe(
+      "$table->enum('access_level', ['full', 'limited', 'readonly'])->default('readonly');"
+    );
+  });
+
+  it('generates correct PHP code for Enum pivot column without modifiers', () => {
+    const schema: LoadedSchema = {
+      name: 'Category',
+      kind: 'object',
+      filePath: '/schemas/Category.yaml',
+      relativePath: '/schemas/Category.yaml',
+      properties: {
+        products: {
+          type: 'Association',
+          relation: 'ManyToMany',
+          target: 'Product',
+          joinTable: 'category_product',
+          owning: true,
+          pivotFields: {
+            display_type: {
+              type: 'Enum',
+              enum: ['featured', 'normal', 'hidden'],
+            },
+          },
+        } as any,
+      },
+    };
+
+    const schemas: SchemaCollection = {
+      Category: schema,
+      Product: {
+        name: 'Product',
+        kind: 'object',
+        filePath: '/schemas/Product.yaml',
+        relativePath: '/schemas/Product.yaml',
+        properties: {},
+      },
+    };
+
+    const pivots = extractManyToManyRelations(schema, schemas);
+    const blueprint = generatePivotTableBlueprint(pivots[0]!);
+    const displayCol = blueprint.columns.find(c => c.name === 'display_type')!;
+    const phpCode = formatColumnMethod(displayCol);
+
+    // No modifiers, just the enum column
+    expect(phpCode).toBe("$table->enum('display_type', ['featured', 'normal', 'hidden']);");
   });
 
   it('generates pivot table blueprint with pivotFields columns', () => {

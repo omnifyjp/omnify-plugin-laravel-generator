@@ -4,7 +4,7 @@
  * Converts SQL types and operations to Laravel Schema Builder methods.
  */
 
-import type { PropertyDefinition, LoadedSchema, SchemaCollection, CustomTypeDefinition, LocalizedString, LocaleResolutionOptions, PluginEnumDefinition } from '@famgia/omnify-types';
+import type { PropertyDefinition, LoadedSchema, SchemaCollection, CustomTypeDefinition, LocalizedString, LocaleResolutionOptions, PluginEnumDefinition, InlineEnumValue } from '@famgia/omnify-types';
 import { resolveLocalizedString } from '@famgia/omnify-types';
 import type {
   ColumnMethod,
@@ -973,7 +973,7 @@ export function formatIndex(index: IndexDefinition): string {
 export interface PivotFieldInfo {
   /** Field name in snake_case */
   name: string;
-  /** Property type (String, Int, Boolean, Timestamp, etc.) */
+  /** Property type (String, Int, Boolean, Timestamp, Enum, etc.) */
   type: string;
   /** Whether the field can be null */
   nullable?: boolean;
@@ -983,6 +983,8 @@ export interface PivotFieldInfo {
   length?: number;
   /** Whether the field is unsigned (for numeric types) */
   unsigned?: boolean;
+  /** Enum values (only for type: Enum) - extracted string values */
+  enum?: readonly string[];
 }
 
 /**
@@ -1149,13 +1151,23 @@ export function extractManyToManyRelations(
     const pivotFields: PivotFieldInfo[] = [];
     if (assocProp.pivotFields) {
       for (const [fieldName, fieldDef] of Object.entries(assocProp.pivotFields)) {
+        // Extract enum string values if type is Enum
+        let enumValues: readonly string[] | undefined;
+        if (fieldDef.type === 'Enum') {
+          const rawEnum = (fieldDef as { enum?: readonly (string | InlineEnumValue)[] }).enum;
+          if (rawEnum && Array.isArray(rawEnum)) {
+            enumValues = rawEnum.map(v => typeof v === 'string' ? v : v.value);
+          }
+        }
+
         pivotFields.push({
           name: toColumnName(fieldName),
           type: fieldDef.type,
           nullable: fieldDef.nullable,
           default: fieldDef.default,
-          length: fieldDef.length,
-          unsigned: fieldDef.unsigned,
+          length: (fieldDef as { length?: number }).length,
+          unsigned: (fieldDef as { unsigned?: boolean }).unsigned,
+          enum: enumValues,
         });
       }
     }
@@ -1188,6 +1200,11 @@ function pivotFieldToColumn(field: PivotFieldInfo): ColumnMethod {
   // Handle length for string types
   if (method === 'string' && field.length) {
     args.push(field.length);
+  }
+
+  // Handle enum values for Enum type
+  if (field.type === 'Enum' && field.enum && field.enum.length > 0) {
+    args.push(field.enum as unknown as string);
   }
 
   // Handle nullable

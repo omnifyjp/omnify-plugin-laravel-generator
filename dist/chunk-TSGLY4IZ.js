@@ -699,13 +699,21 @@ function extractManyToManyRelations(schema, allSchemas) {
     const pivotFields = [];
     if (assocProp.pivotFields) {
       for (const [fieldName, fieldDef] of Object.entries(assocProp.pivotFields)) {
+        let enumValues;
+        if (fieldDef.type === "Enum") {
+          const rawEnum = fieldDef.enum;
+          if (rawEnum && Array.isArray(rawEnum)) {
+            enumValues = rawEnum.map((v) => typeof v === "string" ? v : v.value);
+          }
+        }
         pivotFields.push({
           name: toColumnName(fieldName),
           type: fieldDef.type,
           nullable: fieldDef.nullable,
           default: fieldDef.default,
           length: fieldDef.length,
-          unsigned: fieldDef.unsigned
+          unsigned: fieldDef.unsigned,
+          enum: enumValues
         });
       }
     }
@@ -730,6 +738,9 @@ function pivotFieldToColumn(field) {
   const modifiers = [];
   if (method === "string" && field.length) {
     args.push(field.length);
+  }
+  if (field.type === "Enum" && field.enum && field.enum.length > 0) {
+    args.push(field.enum);
   }
   if (field.nullable) {
     modifiers.push({ method: "nullable" });
@@ -5358,4 +5369,4 @@ export {
   shouldGenerateAIGuides,
   laravelPlugin
 };
-//# sourceMappingURL=chunk-IXQNWFFZ.js.map
+//# sourceMappingURL=chunk-TSGLY4IZ.js.map
